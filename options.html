@@ -11,29 +11,194 @@
       padding: 20px;
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
     }
-    .placeholder {
-      text-align: center;
-      padding: 40px;
+    .options-container {
+      max-width: 600px;
+      margin: 0 auto;
+    }
+    .content {
+      padding: 20px;
+    }
+    h2 {
+      font-size: 16px;
+      font-weight: 600;
+      margin: 20px 0 12px 0;
+      color: #24292f;
+    }
+    .info-box {
+      background: #ddf4ff;
+      border: 1px solid #54aeff;
+      border-radius: 6px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 13px;
+    }
+    .info-box strong {
+      display: block;
+      margin-bottom: 8px;
+    }
+    .info-box ol {
+      margin-left: 20px;
+      margin-top: 8px;
+    }
+    .info-box li {
+      margin-bottom: 4px;
+    }
+    .info-box a {
+      color: #0969da;
+      text-decoration: none;
+    }
+    .info-box a:hover {
+      text-decoration: underline;
+    }
+    .info-box code {
+      background: #ffffff;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 12px;
+    }
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 6px;
+      font-size: 14px;
+      color: #24292f;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 8px 12px;
+      border: 1px solid #d0d7de;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #0969da;
+      box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+    }
+    .form-group small {
+      display: block;
+      margin-top: 4px;
+      font-size: 12px;
+      color: #57606a;
+    }
+    .button-group {
+      margin-top: 16px;
+      display: flex;
+      gap: 8px;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #d0d7de;
+      margin: 24px 0;
+    }
+    .status-message {
+      margin-top: 16px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 14px;
+      display: none;
+    }
+    .status-message.success {
+      background: #ddf4ff;
+      border: 1px solid #54aeff;
+      color: #0969da;
+    }
+    .status-message.error {
+      background: #ffebe9;
+      border: 1px solid #ff8182;
+      color: #cf222e;
+    }
+    .status-message.info {
+      background: #f6f8fa;
+      border: 1px solid #d0d7de;
       color: #57606a;
     }
   </style>
 </head>
 <body>
-  <div class="container">
+  <div class="options-container">
     <div class="header">
-      <h1>n8n Workflow Manager Settings</h1>
+      <h1>n8n Workflow Manager</h1>
+      <p class="subtitle">Configuration</p>
     </div>
-    <div class="placeholder">
-      <p><strong>Settings page coming soon!</strong></p>
-      <p>This page will allow you to configure:</p>
-      <ul style="text-align: left; display: inline-block;">
-        <li>n8n instance URL</li>
-        <li>n8n API key</li>
-        <li>GitHub repository</li>
-        <li>GitHub personal access token</li>
-      </ul>
-      <p style="margin-top: 20px;">For now, extension buttons are disabled.</p>
+
+    <div class="content">
+      <!-- n8n Configuration Section -->
+      <h2>n8n Configuration</h2>
+
+      <div class="info-box">
+        <strong>How to create an n8n API Key:</strong>
+        <ol>
+          <li>Go to your n8n instance Settings → API</li>
+          <li>Click "Create API Key"</li>
+          <li>Give it a descriptive name (e.g., "Chrome Extension")</li>
+          <li>Copy the key (it will only be shown once)</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label for="n8nInstanceUrl">n8n Instance URL:</label>
+        <input type="text" id="n8nInstanceUrl" placeholder="https://n8n.example.com">
+        <small>The base URL of your n8n instance (without trailing slash)</small>
+      </div>
+
+      <div class="form-group">
+        <label for="n8nApiKey">n8n API Key:</label>
+        <input type="password" id="n8nApiKey" placeholder="n8n_api_...">
+        <small>Your API key is stored securely and cleared when you close the browser</small>
+      </div>
+
+      <div class="button-group">
+        <button id="testN8nConnection" class="btn btn-secondary">Test n8n Connection</button>
+      </div>
+
+      <hr>
+
+      <!-- GitHub Configuration Section (Optional) -->
+      <h2>GitHub Backup (Optional)</h2>
+
+      <div class="info-box">
+        <strong>How to create a GitHub Personal Access Token:</strong>
+        <ol>
+          <li>Go to <a href="https://github.com/settings/tokens" target="_blank">GitHub Settings → Personal access tokens</a></li>
+          <li>Click "Generate new token (classic)"</li>
+          <li>Select scope: <code>repo</code> (Full control of private repositories)</li>
+          <li>Click "Generate token" and copy it</li>
+        </ol>
+      </div>
+
+      <div class="form-group">
+        <label for="githubToken">Personal Access Token:</label>
+        <input type="password" id="githubToken" placeholder="ghp_xxxxxxxxxxxxxxxxxxxx">
+        <small>Your token is stored securely and cleared when you close the browser</small>
+      </div>
+
+      <div class="form-group">
+        <label for="githubRepo">Repository (owner/repo):</label>
+        <input type="text" id="githubRepo" placeholder="username/workflow-backups">
+        <small>Format: owner/repository (e.g., myteam/n8n-backups)</small>
+      </div>
+
+      <div class="button-group">
+        <button id="testGitHubConnection" class="btn btn-secondary">Test GitHub Connection</button>
+      </div>
+
+      <hr>
+
+      <!-- Save Button -->
+      <div class="button-group">
+        <button id="saveSettings" class="btn btn-primary">Save All Settings</button>
+      </div>
+
+      <div id="statusMessage" class="status-message"></div>
     </div>
   </div>
+
+  <script src="options.js"></script>
 </body>
 </html>

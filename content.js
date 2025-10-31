@@ -1,5 +1,6 @@
 // Content script - Extracts workflow metadata from n8n pages
 // This script runs in the context of n8n web pages
+// Note: Cookie extraction is done by popup using chrome.cookies API
 
 (function() {
   'use strict';

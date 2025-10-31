@@ -36,6 +36,7 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
 
 /**
  * Build standard n8n API request headers
+ * Uses X-N8N-API-KEY header for authentication
  *
  * @param {string} apiKey - n8n API key
  * @param {boolean} includeContentType - Whether to include Content-Type header
@@ -44,7 +45,6 @@ async function fetchWithTimeout(url, options = {}, timeout = 30000) {
 function buildN8nHeaders(apiKey, includeContentType = false) {
   const headers = {
     'Accept': 'application/json',
-    'User-Agent': 'n8n-workflow-manager/1.0',
     'X-N8N-API-KEY': apiKey
   };
 
@@ -53,25 +53,6 @@ function buildN8nHeaders(apiKey, includeContentType = false) {
   }
 
   return headers;
-}
-
-/**
- * Retrieve n8n configuration from Chrome storage
- *
- * @returns {Promise<Object>} - Configuration object with url and apiKey
- * @throws {Error} - If configuration is missing
- */
-async function getN8nConfig() {
-  const config = await chrome.storage.session.get(['n8nUrl', 'n8nApiKey']);
-
-  if (!config.n8nUrl || !config.n8nApiKey) {
-    throw new Error('n8n connection not configured. Please set URL and API key in options.');
-  }
-
-  return {
-    url: config.n8nUrl.replace(/\/$/, ''), // Remove trailing slash
-    apiKey: config.n8nApiKey
-  };
 }
 
 /**
@@ -228,19 +209,21 @@ function cleanWorkflowData(workflow) {
 
 /**
  * Fetch complete workflow definition from n8n
+ * Uses X-N8N-API-KEY header for authentication
  *
+ * @param {string} instanceUrl - n8n instance base URL (e.g., "https://n8n.example.com")
  * @param {string} workflowId - Workflow UUID
+ * @param {string} apiKey - n8n API key
  * @returns {Promise<Object>} - Complete workflow content
  * @throws {Error} - On API errors
  */
-async function getWorkflowContent(workflowId) {
-  const config = await getN8nConfig();
-  const endpoint = `${config.url}/api/v1/workflows/${workflowId}`;
+async function getWorkflowContent(instanceUrl, workflowId, apiKey) {
+  const endpoint = `${instanceUrl}/api/v1/workflows/${workflowId}`;
 
   try {
     const response = await fetchWithTimeout(endpoint, {
       method: 'GET',
-      headers: buildN8nHeaders(config.apiKey)
+      headers: buildN8nHeaders(apiKey)
     });
 
     // Specific error handling per n8n_methods.md:165-168
@@ -249,7 +232,7 @@ async function getWorkflowContent(workflowId) {
     }
 
     if (response.status === 401 || response.status === 403) {
-      throw new Error('Authentication failed - check API key permissions in options');
+      throw new Error('Authentication failed - please log in to n8n');
     }
 
     if (response.status >= 500) {
