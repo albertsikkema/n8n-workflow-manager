@@ -2,13 +2,14 @@
   "manifest_version": 3,
   "name": "n8n Workflow Manager",
   "version": "1.0.0",
-  "description": "Backup and restore n8n workflows with GitHub integration and hash-based sync detection",
+  "description": "Backup and restore n8n workflows with GitHub integration.",
+  "author": "Albert Sikkema",
+  "homepage_url": "https://github.com/albertsikkema/n8n-workflow-manager",
   "permissions": [
     "activeTab",
     "downloads",
     "tabs",
-    "storage",
-    "cookies"
+    "storage"
   ],
   "host_permissions": [
     "https://*/*",
