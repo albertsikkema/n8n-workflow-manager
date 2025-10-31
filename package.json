@@ -28,17 +28,17 @@
   "jest": {
     "testEnvironment": "jsdom",
     "testMatch": [
-      "**/__tests__/**/*.test.js"
+      "**/tests/**/*.test.js"
     ],
     "collectCoverageFrom": [
       "*.js",
       "!background.js",
       "!node_modules/**",
-      "!__tests__/**"
+      "!tests/**"
     ],
     "coveragePathIgnorePatterns": [
       "/node_modules/",
-      "/__tests__/"
+      "/tests/"
     ]
   }
 }

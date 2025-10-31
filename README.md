@@ -18,7 +18,8 @@ A Chrome extension to backup and restore n8n workflows directly from your n8n in
 - ✅ **Cross-Workflow Restore** - Restore from any workflow in your repository
 - ✅ **Direct API Integration** - Uses n8n REST API and GitHub REST API
 - ✅ **API Key Authentication** - Uses your configured n8n API key
-- ✅ **Dynamic Icon** - Blue icon on n8n pages, gray icon elsewhere
+- ✅ **Dynamic Icon** - Purple icon on n8n workflow pages, gray icon elsewhere
+- ✅ **Localhost Support** - Works with local n8n instances (http://localhost:5678)
 - ✅ **Simple UI** - Clean, GitHub-inspired interface
 - ✅ **No Data Collection** - All operations are local
 
@@ -94,6 +95,8 @@ To enable GitHub integration for centralized backup and version control:
 Once configured, you'll see **"Backup to GitHub"** and **"Restore from GitHub"** buttons in the popup.
 
 ## Usage
+
+> **📍 Important:** The extension only activates when you're viewing a workflow in n8n. The icon will turn **purple** when on a workflow page (URL contains `/workflow/`), and stay **gray** on other pages (like the settings or dashboard).
 
 ### Backup a Workflow
 

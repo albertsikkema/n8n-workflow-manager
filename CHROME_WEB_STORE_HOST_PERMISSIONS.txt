@@ -1,0 +1,7 @@
+HOST PERMISSION JUSTIFICATION (under 1000 characters)
+
+**https://*/*** - n8n can be self-hosted on ANY domain (n8n.yourcompany.com, automation.example.org, app.n8n.cloud, etc.). We cannot predict where users run their n8n instances. Content script ONLY activates on pages with "/workflow/" in the URL to extract workflow ID from the URL structure. Does NOT access page content, forms, cookies, or user data. We cannot narrow this permission because n8n has no central registry - users self-host on custom domains. Privacy protections: Extension icon stays gray on non-n8n pages, no data collection from browsing, no analytics or tracking.
+
+**https://api.github.com/**** - Optional GitHub backup and version history features. Makes API calls to list workflows in YOUR GitHub repository, push workflow backups, retrieve commit history, and restore workflows from specific versions. Privacy: Only accesses YOUR repositories using YOUR personal access token (stored locally in browser). Your token never leaves your device except for direct API calls to GitHub. No third-party servers involved.
+
+Total characters: ~850
