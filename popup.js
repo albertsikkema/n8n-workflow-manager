@@ -140,27 +140,137 @@ async function initialize() {
 //=============================================================================
 
 /**
- * Update status indicator
- * @param {string} type - 'ready' or 'error'
+ * Update status indicator in popup
+ * Reference: example/logic-app-manager-main/popup.js:107-119
+ *
+ * @param {string} type - Status type: '', 'ready', 'error'
  * @param {string} message - Status message to display
  */
 function updateStatus(type, message) {
-  statusIndicator.className = 'status-indicator ' + type;
+  // Remove all status classes
+  statusIndicator.className = 'status-indicator';
+
+  // Add new status class if specified
+  if (type) {
+    statusIndicator.className += ' ' + type;
+  }
+
+  // Update message
   statusText.textContent = message;
 }
 
 /**
  * Show notification toast
+ * Reference: example/logic-app-manager-main/popup.js:121-137
+ *
  * @param {string} message - Notification message
- * @param {string} type - 'success' or 'error'
+ * @param {string} type - Notification type: 'success', 'error', 'info'
  */
-function showNotification(message, type = 'success') {
-  notificationText.textContent = message;
-  notification.className = 'notification ' + type;
-  notification.style.display = 'block';
+function showNotification(message, type = 'info') {
+  const notification = document.createElement('div');
+  notification.className = `notification notification-${type}`;
+  notification.textContent = message;
+
+  document.body.appendChild(notification);
+
+  // Auto-dismiss after 3 seconds
   setTimeout(() => {
-    notification.style.display = 'none';
+    notification.classList.add('notification-fade-out');
+    setTimeout(() => notification.remove(), 300);
   }, 3000);
+}
+
+/**
+ * Download workflow as JSON file
+ * Reference: example/logic-app-manager-main/popup.js:205-217
+ *
+ * @param {Object} data - Workflow data to download
+ * @param {string} workflowName - Workflow name for filename
+ */
+async function downloadToFile(data, workflowName) {
+  const now = new Date();
+  const yyyymmdd = now.toISOString().slice(0, 10).replace(/-/g, '');
+  const hhmm = now.toTimeString().slice(0, 5).replace(':', '');
+
+  // Sanitize workflow name for filename
+  const sanitizedName = workflowName.replace(/[<>:"/\\|?*]/g, '-');
+  const filename = `${yyyymmdd}-${hhmm}-${sanitizedName}.json`;
+
+  // Create blob with proper MIME type
+  const blob = new Blob([JSON.stringify(data, null, 2)], {
+    type: 'application/json'
+  });
+
+  // Create temporary object URL
+  const url = URL.createObjectURL(blob);
+
+  try {
+    // Trigger download
+    await chrome.downloads.download({
+      url: url,
+      filename: filename,
+      saveAs: true
+    });
+
+    console.log(`[Download] File saved: ${filename}`);
+  } finally {
+    // Clean up immediately (download continues independently)
+    URL.revokeObjectURL(url);
+  }
+}
+
+//=============================================================================
+// BACKUP WORKFLOW
+//=============================================================================
+
+/**
+ * Complete backup workflow operation
+ * Combines: API fetch, hash generation, data cleaning, file download
+ * Reference: Research doc section 4
+ *
+ * @param {string} workflowId - Workflow UUID to backup
+ */
+async function backupWorkflowToFile(workflowId) {
+  try {
+    // 1. Update UI to working state
+    updateStatus('', 'Backing up workflow...');
+    backupToFileButton.disabled = true;
+
+    // 2. Fetch complete workflow from n8n
+    const workflow = await getWorkflowContent(workflowId);
+    console.log(`[Backup] Fetched workflow: ${workflow.name}`);
+
+    // 3. Generate hash for metadata (for future sync tracking)
+    const hash = await generateWorkflowHash(workflow);
+    console.log(`[Backup] Workflow hash: ${hash}`);
+
+    // 4. Clean instance-specific data
+    const cleanedData = cleanWorkflowData(workflow);
+    console.log(`[Backup] Data cleaned - removed credentials and instance-specific fields`);
+
+    // 5. Download to file
+    await downloadToFile(cleanedData, workflow.name);
+
+    // 6. Show success
+    updateStatus('ready', 'Backup completed!');
+    showNotification(`Workflow "${workflow.name}" backed up successfully!`, 'success');
+
+    return { success: true, hash: hash, filename: `${workflow.name}.json` };
+
+  } catch (error) {
+    // 7. Handle errors with categorization
+    console.error('[Backup] Error:', error);
+
+    const errorInfo = handleN8nError(null, error);
+    updateStatus('error', 'Backup failed');
+    showNotification(`Backup failed: ${errorInfo.message}`, 'error');
+
+    return { success: false, error: errorInfo.message };
+
+  } finally {
+    // 8. Always re-enable button
+    backupToFileButton.disabled = false;
+  }
 }
 
 //=============================================================================
@@ -182,9 +292,11 @@ restoreFromGitHubButton?.addEventListener('click', () => {
   showNotification('GitHub restore not yet implemented', 'error');
 });
 
-// Backup to File button (stub - will implement in later phase)
-backupToFileButton?.addEventListener('click', () => {
-  showNotification('File backup not yet implemented', 'error');
+// Backup to File button
+backupToFileButton?.addEventListener('click', async () => {
+  if (metadata && metadata.workflowId) {
+    await backupWorkflowToFile(metadata.workflowId);
+  }
 });
 
 // Restore from File button (stub - will implement in later phase)
@@ -196,5 +308,5 @@ restoreFromFileButton?.addEventListener('click', () => {
 // STARTUP
 //=============================================================================
 
-// Initialize on load
-initialize();
+// Initialize when DOM is ready
+document.addEventListener('DOMContentLoaded', initialize);
