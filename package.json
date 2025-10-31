@@ -1,6 +1,6 @@
 {
   "name": "n8n-workflow-manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Chrome extension to backup and restore n8n workflows",
   "scripts": {
     "test": "jest",

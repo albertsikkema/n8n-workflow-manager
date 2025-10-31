@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "n8n Workflow Manager",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Backup and restore n8n workflows with GitHub integration.",
   "author": "Albert Sikkema",
   "homepage_url": "https://github.com/albertsikkema/n8n-workflow-manager",
