@@ -3,3 +3,33 @@ claude-helpers/
 thoughts/
 
 example/
+
+# Dependencies
+node_modules/
+
+# Testing
+coverage/
+*.test.js.snap
+
+# Build outputs
+*.zip
+dist/
+
+# macOS
+.DS_Store
+
+# IDE
+.vscode/
+.idea/
+
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+
+# Temporary files
+*.tmp
+*.swp
+*~
