@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>n8n Workflow Manager</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header Section -->
+    <div class="header">
+      <h1>n8n Workflow Manager</h1>
+      <p class="subtitle">Backup & Restore Tool</p>
+      <button id="settingsButton" class="settings-link" title="Settings">
+        <svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.532 1.532 0 01-2.286.948c-1.372-.836-2.942.734-2.106 2.106.54.886.061 2.042-.947 2.287-1.561.379-1.561 2.6 0 2.978a1.532 1.532 0 01.947 2.287c-.836 1.372.734 2.942 2.106 2.106a1.532 1.532 0 012.287.947c.379 1.561 2.6 1.561 2.978 0a1.533 1.533 0 012.287-.947c1.372.836 2.942-.734 2.106-2.106a1.533 1.533 0 01.947-2.287c1.561-.379 1.561-2.6 0-2.978a1.532 1.532 0 01-.947-2.287c.836-1.372-.734-2.942-2.106-2.106a1.532 1.532 0 01-2.287-.947zM10 13a3 3 0 100-6 3 3 0 000 6z" clip-rule="evenodd"/>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Status Indicator -->
+    <div class="status" id="status">
+      <span class="status-indicator" id="statusIndicator"></span>
+      <span id="statusText">Detecting n8n workflow page...</span>
+    </div>
+
+    <!-- Info Section (shown when on n8n page) -->
+    <div class="info-section" id="infoSection" style="display: none;">
+      <div class="info-item">
+        <span class="label">Workflow ID:</span>
+        <span class="value" id="workflowId">-</span>
+      </div>
+      <div class="info-item">
+        <span class="label">Instance:</span>
+        <span class="value" id="instanceUrl">-</span>
+      </div>
+
+      <!-- GitHub Status -->
+      <div class="info-item">
+        <span class="label">GitHub:</span>
+        <span class="value" id="githubStatus">Not configured</span>
+      </div>
+    </div>
+
+    <!-- Action Buttons -->
+    <div class="actions">
+      <!-- GitHub buttons (shown when GitHub is configured) -->
+      <div id="githubSeparator" class="button-separator" style="display: none;">
+        <span>Use GitHub</span>
+      </div>
+
+      <button id="backupToGitHubButton" class="btn btn-primary" style="display: none;" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 12l-4-4h2.5V4h3v4H12l-4 4z"/>
+          <path d="M14 13v1H2v-1h12z"/>
+        </svg>
+        Backup to GitHub
+      </button>
+
+      <button id="restoreFromGitHubButton" class="btn btn-secondary" style="display: none;" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 4l4 4H9.5v4h-3V8H4l4-4z"/>
+          <path d="M2 3v-1h12v1H2z"/>
+        </svg>
+        Restore from GitHub
+      </button>
+
+      <!-- Separator -->
+      <div id="buttonSeparator" class="button-separator" style="display: none;">
+        <span>or use local files</span>
+      </div>
+
+      <!-- File buttons (always shown when on n8n page) -->
+      <button id="backupToFileButton" class="btn btn-primary" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 12l-4-4h2.5V4h3v4H12l-4 4z"/>
+          <path d="M14 13v1H2v-1h12z"/>
+        </svg>
+        Backup to File
+      </button>
+
+      <button id="restoreFromFileButton" class="btn btn-secondary" disabled>
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 4l4 4H9.5v4h-3V8H4l4-4z"/>
+          <path d="M2 3v-1h12v1H2z"/>
+        </svg>
+        Restore from File
+      </button>
+
+      <input type="file" id="uploadFile" accept=".json" style="display: none;" />
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <div class="help-text">
+        Make sure you're on an n8n workflow page.
+      </div>
+    </div>
+
+    <!-- Notification Toast -->
+    <div class="notification" id="notification" style="display: none;">
+      <span id="notificationText"></span>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
