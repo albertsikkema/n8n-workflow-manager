@@ -410,3 +410,28 @@ body {
 .modal-footer .btn {
   margin: 0;
 }
+
+.workflow-selector {
+  width: 100%;
+  padding: 8px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 6px;
+  font-size: 14px;
+  font-family: inherit;
+  background: white;
+  cursor: pointer;
+}
+
+.workflow-selector:focus {
+  outline: none;
+  border-color: #0969da;
+  box-shadow: 0 0 0 3px rgba(9, 105, 218, 0.1);
+}
+
+.loading-message,
+.no-commits-message {
+  padding: 40px 20px;
+  text-align: center;
+  color: #57606a;
+  font-size: 14px;
+}

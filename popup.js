@@ -188,6 +188,71 @@ function showNotification(message, type = 'info') {
 }
 
 /**
+ * Show confirmation modal
+ * Returns a promise that resolves with true if confirmed, false if cancelled
+ *
+ * @param {string} title - Modal title
+ * @param {string} message - Confirmation message (supports multiple lines)
+ * @returns {Promise<boolean>} - True if confirmed, false if cancelled
+ */
+function showConfirmationModal(title, message) {
+  return new Promise((resolve) => {
+    // Create modal
+    const modal = document.createElement('div');
+    modal.id = 'confirmationModal';
+    modal.innerHTML = `
+      <div class="modal-overlay">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h3>${escapeHtml(title)}</h3>
+            <button id="closeConfirmModal" class="close-btn">&times;</button>
+          </div>
+          <div class="modal-body">
+            <p style="white-space: pre-line; line-height: 1.6; color: #24292f;">${escapeHtml(message)}</p>
+          </div>
+          <div class="modal-footer">
+            <button id="cancelConfirm" class="btn btn-secondary">Cancel</button>
+            <button id="confirmAction" class="btn btn-primary">Continue</button>
+          </div>
+        </div>
+      </div>
+    `;
+
+    document.body.appendChild(modal);
+
+    const confirmBtn = document.getElementById('confirmAction');
+    const cancelBtn = document.getElementById('cancelConfirm');
+    const closeBtn = document.getElementById('closeConfirmModal');
+
+    // Handle confirm
+    const handleConfirm = () => {
+      document.body.removeChild(modal);
+      resolve(true);
+    };
+
+    // Handle cancel
+    const handleCancel = () => {
+      document.body.removeChild(modal);
+      resolve(false);
+    };
+
+    confirmBtn.addEventListener('click', handleConfirm);
+    cancelBtn.addEventListener('click', handleCancel);
+    closeBtn.addEventListener('click', handleCancel);
+
+    // Allow Escape to cancel
+    modal.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        handleCancel();
+      }
+    });
+
+    // Focus the confirm button
+    confirmBtn.focus();
+  });
+}
+
+/**
  * Show commit message modal
  * Returns a promise that resolves with the commit message or null if cancelled
  *
@@ -309,6 +374,7 @@ async function downloadToFile(data, workflowName) {
 
 /**
  * Show modal to select commit for restore
+ * Includes workflow selector to restore from any workflow in the repo
  * Reference: example/logic-app-manager-main/popup.js:393-463
  */
 async function showCommitSelector() {
@@ -321,44 +387,45 @@ async function showCommitSelector() {
   }
 
   try {
-    updateStatus('', 'Loading commits...');
+    updateStatus('', 'Loading workflows...');
 
     if (!metadata || !metadata.workflowId) {
       throw new Error('Cannot determine workflow ID');
     }
 
-    // Fetch commits for this workflow
-    const commits = await listCommits(githubToken, githubRepo, metadata.workflowId, 20);
+    // Fetch all workflows from repository
+    const workflows = await listWorkflows(githubToken, githubRepo);
 
-    if (commits.length === 0) {
-      showNotification('No commits found for this workflow', 'error');
-      updateStatus('ready', 'No commits found');
+    if (workflows.length === 0) {
+      showNotification('No workflows found in repository', 'error');
+      updateStatus('ready', 'No workflows found');
       return;
     }
 
-    console.log(`[GitHub Restore] Found ${commits.length} commits`);
+    console.log(`[GitHub Restore] Found ${workflows.length} workflows in repository`);
 
-    // Create modal
+    // Create modal with workflow selector
     const modal = document.createElement('div');
     modal.id = 'commitModal';
     modal.innerHTML = `
       <div class="modal-overlay">
         <div class="modal-content">
           <div class="modal-header">
-            <h3>Select a commit to restore</h3>
+            <h3>Restore from GitHub</h3>
             <button id="closeModal" class="close-btn">&times;</button>
           </div>
-          <div class="commit-list">
-            ${commits.map(commit => `
-              <div class="commit-item" data-sha="${commit.sha}">
-                <div class="commit-message">${escapeHtml(commit.commit.message)}</div>
-                <div class="commit-meta">
-                  ${escapeHtml(commit.commit.author.name)} ·
-                  ${new Date(commit.commit.author.date).toLocaleString()}
-                </div>
-                <div class="commit-sha">${commit.sha.substring(0, 7)}</div>
-              </div>
-            `).join('')}
+          <div class="modal-body">
+            <label for="workflowSelector">Select workflow:</label>
+            <select id="workflowSelector" class="workflow-selector">
+              ${workflows.map(wf => `
+                <option value="${wf.id}" ${wf.id === metadata.workflowId ? 'selected' : ''}>
+                  ${wf.id} - ${escapeHtml(wf.title)}
+                </option>
+              `).join('')}
+            </select>
+          </div>
+          <div id="commitListContainer" class="commit-list">
+            <div class="loading-message">Loading commits...</div>
           </div>
         </div>
       </div>
@@ -366,13 +433,72 @@ async function showCommitSelector() {
 
     document.body.appendChild(modal);
 
-    // Handle commit selection
-    modal.querySelectorAll('.commit-item').forEach(item => {
-      item.addEventListener('click', async () => {
-        const sha = item.dataset.sha;
-        document.body.removeChild(modal);
-        await restoreFromCommit(githubToken, githubRepo, metadata.workflowId, sha);
+    const workflowSelector = document.getElementById('workflowSelector');
+    const commitListContainer = document.getElementById('commitListContainer');
+
+    // Function to load commits for selected workflow
+    async function loadCommitsForWorkflow(workflowId) {
+      commitListContainer.innerHTML = '<div class="loading-message">Loading commits...</div>';
+
+      const commits = await listCommits(githubToken, githubRepo, workflowId, 20);
+
+      if (commits.length === 0) {
+        commitListContainer.innerHTML = '<div class="no-commits-message">No commits found for this workflow</div>';
+        return;
+      }
+
+      console.log(`[GitHub Restore] Found ${commits.length} commits for workflow: ${workflowId}`);
+
+      // Render commit list
+      commitListContainer.innerHTML = commits.map(commit => `
+        <div class="commit-item" data-sha="${commit.sha}" data-workflow-id="${workflowId}">
+          <div class="commit-message">${escapeHtml(commit.commit.message)}</div>
+          <div class="commit-meta">
+            ${escapeHtml(commit.commit.author.name)} ·
+            ${new Date(commit.commit.author.date).toLocaleString()}
+          </div>
+          <div class="commit-sha">${commit.sha.substring(0, 7)}</div>
+        </div>
+      `).join('');
+
+      // Add click handlers to commit items
+      commitListContainer.querySelectorAll('.commit-item').forEach(item => {
+        item.addEventListener('click', async () => {
+          const sha = item.dataset.sha;
+          const selectedWorkflowId = item.dataset.workflowId;
+          const commitMessage = item.querySelector('.commit-message').textContent;
+          const commitDate = item.querySelector('.commit-meta').textContent;
+
+          // Confirm restore operation
+          const sourceInfo = selectedWorkflowId === metadata.workflowId
+            ? 'an older version of this workflow'
+            : `workflow "${selectedWorkflowId}"`;
+
+          const confirmed = await showConfirmationModal(
+            '⚠️ Restore Confirmation',
+            `This will replace the current workflow with:\n${sourceInfo}\n\n` +
+            `Commit: ${commitMessage}\n` +
+            `Date: ${commitDate}\n\n` +
+            `The current workflow content will be overwritten.\n` +
+            `Credentials must be reconfigured after restore.\n\n` +
+            `Do you want to continue?`
+          );
+
+          if (!confirmed) {
+            console.log('[GitHub Restore] User cancelled restore operation');
+            return;
+          }
+
+          document.body.removeChild(modal);
+          await restoreFromCommit(githubToken, githubRepo, selectedWorkflowId, sha);
+        });
       });
+    }
+
+    // Handle workflow selector change
+    workflowSelector.addEventListener('change', async () => {
+      const selectedWorkflowId = workflowSelector.value;
+      await loadCommitsForWorkflow(selectedWorkflowId);
     });
 
     // Handle close button
@@ -380,6 +506,9 @@ async function showCommitSelector() {
       document.body.removeChild(modal);
       updateStatus('ready', 'Restore cancelled');
     });
+
+    // Load commits for initially selected workflow (current workflow by default)
+    await loadCommitsForWorkflow(metadata.workflowId);
 
     updateStatus('ready', 'Select a commit');
 
@@ -396,23 +525,26 @@ async function showCommitSelector() {
  *
  * @param {string} token - GitHub personal access token
  * @param {string} repo - Repository in owner/repo format
- * @param {string} workflowId - Workflow UUID
+ * @param {string} sourceWorkflowId - Workflow UUID to restore FROM (selected in dropdown)
  * @param {string} commitSha - Git commit SHA to restore from
  */
-async function restoreFromCommit(token, repo, workflowId, commitSha) {
+async function restoreFromCommit(token, repo, sourceWorkflowId, commitSha) {
   try {
     updateStatus('', 'Restoring from commit...');
 
-    // Step 1: Get workflow from commit
-    const workflowData = await getWorkflowFromCommit(token, repo, workflowId, commitSha);
+    // Step 1: Get workflow from commit (from selected workflow)
+    const workflowData = await getWorkflowFromCommit(token, repo, sourceWorkflowId, commitSha);
     console.log(`[GitHub Restore] Fetched workflow from commit: ${commitSha.substring(0, 7)}`);
 
     // Step 2: Clean data before restore (REQUIRED FOR N8N)
     const cleanedData = cleanWorkflowData(workflowData);
     console.log('[GitHub Restore] Data cleaned - removed credentials and instance-specific fields');
 
-    // Step 3: Call n8n API to restore workflow
-    const endpoint = `${metadata.instanceUrl}/api/v1/workflows/${workflowId}`;
+    // Step 3: Call n8n API to restore workflow TO CURRENT WORKFLOW
+    // Important: Restore to the current workflow ID (metadata.workflowId), not the source
+    const endpoint = `${metadata.instanceUrl}/api/v1/workflows/${metadata.workflowId}`;
+
+    console.log(`[GitHub Restore] Restoring from workflow ${sourceWorkflowId} to current workflow ${metadata.workflowId}`);
 
     // Step 4: Restore to n8n (using API key)
     const response = await fetch(endpoint, {
@@ -602,25 +734,41 @@ uploadFile?.addEventListener('change', async (event) => {
   if (!file) return; // User cancelled
 
   try {
-    updateStatus('', 'Restoring from file...');
-    restoreFromFileButton.disabled = true;
-
     // Step 1: Read and parse file
     const content = await file.text(); // Modern async file reading
     const data = JSON.parse(content);  // Throws if invalid JSON
 
     console.log(`[Restore] Parsed workflow from file: ${data.name || 'Unknown'}`);
 
-    // Step 2: Clean data (REQUIRED FOR N8N - not in Logic App Manager)
+    // Step 2: Confirm restore operation
+    const workflowName = data.name || 'Unknown Workflow';
+    const confirmed = await showConfirmationModal(
+      '⚠️ Restore Confirmation',
+      `This will replace the current workflow with:\n"${workflowName}"\n\n` +
+      `The current workflow content will be overwritten.\n` +
+      `Credentials must be reconfigured after restore.\n\n` +
+      `Do you want to continue?`
+    );
+
+    if (!confirmed) {
+      console.log('[Restore] User cancelled restore operation');
+      updateStatus('ready', 'Restore cancelled');
+      return;
+    }
+
+    updateStatus('', 'Restoring from file...');
+    restoreFromFileButton.disabled = true;
+
+    // Step 3: Clean data (REQUIRED FOR N8N - not in Logic App Manager)
     const cleanedData = cleanWorkflowData(data);
     console.log('[Restore] Data cleaned - removed credentials and instance-specific fields');
 
-    // Step 3: Get workflow metadata
+    // Step 4: Get workflow metadata
     if (!metadata || !metadata.workflowId) {
       throw new Error('Cannot determine workflow ID. Are you on a workflow page?');
     }
 
-    // Step 4: Call n8n API to restore workflow (using API key)
+    // Step 5: Call n8n API to restore workflow (using API key)
     const endpoint = `${metadata.instanceUrl}/api/v1/workflows/${metadata.workflowId}`;
 
     const response = await fetch(endpoint, {

@@ -34,6 +34,78 @@ function escapeHtml(text) {
 //=============================================================================
 
 /**
+ * List all workflows in the GitHub repository with their titles
+ * Scans the workflows/ directory for .json files and fetches their titles
+ *
+ * @param {string} token - GitHub personal access token
+ * @param {string} repo - Repository in owner/repo format
+ * @returns {Promise<Array>} Array of objects with {id, title}
+ * @throws {Error} If API call fails
+ */
+async function listWorkflows(token, repo) {
+  const [owner, repoName] = repo.split('/');
+  const url = `https://api.github.com/repos/${owner}/${repoName}/contents/workflows`;
+
+  const response = await fetch(url, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+      'Accept': 'application/vnd.github+json',
+      'X-GitHub-Api-Version': '2022-11-28'
+    }
+  });
+
+  if (response.status === 404) {
+    // workflows/ directory doesn't exist yet
+    return [];
+  }
+
+  if (!response.ok) {
+    throw new Error(`Failed to list workflows: ${response.status}`);
+  }
+
+  const files = await response.json();
+
+  // Filter for .json files
+  const workflowFiles = files.filter(file => file.type === 'file' && file.name.endsWith('.json'));
+
+  // Fetch title for each workflow
+  const workflows = await Promise.all(
+    workflowFiles.map(async (file) => {
+      const workflowId = file.name.replace('.json', '');
+
+      try {
+        // Fetch the workflow file content
+        const contentResponse = await fetch(file.url, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Accept': 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
+
+        if (!contentResponse.ok) {
+          return { id: workflowId, title: 'Unknown' };
+        }
+
+        const contentData = await contentResponse.json();
+        const content = atob(contentData.content.replace(/\s/g, ''));
+        const workflow = JSON.parse(content);
+
+        return {
+          id: workflowId,
+          title: workflow.name || 'Untitled'
+        };
+      } catch (error) {
+        console.error(`Failed to fetch title for workflow ${workflowId}:`, error);
+        return { id: workflowId, title: 'Unknown' };
+      }
+    })
+  );
+
+  return workflows;
+}
+
+/**
  * Get SHA of existing file in GitHub repository
  * Required for updating files (GitHub's optimistic concurrency control)
  * Reference: example/logic-app-manager-main/popup.js:128-158
