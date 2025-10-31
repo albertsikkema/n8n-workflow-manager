@@ -35,6 +35,8 @@ A Chrome extension to backup and restore n8n workflows directly from your n8n in
 
 ## Installation
 
+We are awaiting Chrome webstore admission, so until then install using one of these methods:
+
 ### Option 1: Install from Release (Recommended)
 
 1. Go to the [Releases page](https://github.com/albertsikkema/n8n-workflow-manager/releases)
