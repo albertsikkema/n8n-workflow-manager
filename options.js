@@ -13,29 +13,42 @@ const testN8nButton = document.getElementById('testN8nConnection');
 const testGitHubButton = document.getElementById('testGitHubConnection');
 const saveButton = document.getElementById('saveSettings');
 const statusMessage = document.getElementById('statusMessage');
+const n8nTestStatus = document.getElementById('n8nTestStatus');
+const githubTestStatus = document.getElementById('githubTestStatus');
 
 //=============================================================================
 // UI HELPER FUNCTIONS
 //=============================================================================
 
 /**
- * Show status message with type-based styling
+ * Show status message in a specific element
+ *
+ * @param {HTMLElement} element - Status message element
+ * @param {string} message - Status message to display
+ * @param {string} type - Message type: 'success', 'error', 'info'
+ */
+function showStatusInElement(element, message, type) {
+  element.textContent = message;
+  element.className = `status-message ${type}`;
+  element.style.display = 'block';
+
+  // Auto-hide success messages after 5 seconds
+  if (type === 'success') {
+    setTimeout(() => {
+      element.style.display = 'none';
+    }, 5000);
+  }
+}
+
+/**
+ * Show status message with type-based styling (global status)
  * Reference: example/logic-app-manager-main/options.js:17-30
  *
  * @param {string} message - Status message to display
  * @param {string} type - Message type: 'success', 'error', 'info'
  */
 function showStatus(message, type) {
-  statusMessage.textContent = message;
-  statusMessage.className = `status-message ${type}`;
-  statusMessage.style.display = 'block';
-
-  // Auto-hide success messages after 5 seconds
-  if (type === 'success') {
-    setTimeout(() => {
-      statusMessage.style.display = 'none';
-    }, 5000);
-  }
+  showStatusInElement(statusMessage, message, type);
 }
 
 /**
@@ -127,7 +140,7 @@ testN8nButton.addEventListener('click', async () => {
   const apiKey = n8nApiKeyInput.value.trim();
 
   if (!instanceUrl || !apiKey) {
-    showStatus('Please fill in both n8n instance URL and API key', 'error');
+    showStatusInElement(n8nTestStatus, 'Please fill in both n8n instance URL and API key', 'error');
     return;
   }
 
@@ -135,22 +148,23 @@ testN8nButton.addEventListener('click', async () => {
   try {
     new URL(instanceUrl);
   } catch (error) {
-    showStatus('Invalid instance URL format. Use: https://n8n.example.com', 'error');
+    showStatusInElement(n8nTestStatus, 'Invalid instance URL format. Use: https://n8n.example.com', 'error');
     return;
   }
 
   try {
     testN8nButton.disabled = true;
-    showStatus('Testing n8n connection...', 'info');
+    showStatusInElement(n8nTestStatus, 'Testing n8n connection...', 'info');
 
     const result = await testN8nConnection(instanceUrl, apiKey);
 
-    showStatus(
+    showStatusInElement(
+      n8nTestStatus,
       `✓ n8n connection successful! Found ${result.data?.length || 0} workflows.`,
       'success'
     );
   } catch (error) {
-    showStatus(`✗ ${error.message}`, 'error');
+    showStatusInElement(n8nTestStatus, `✗ ${error.message}`, 'error');
   } finally {
     testN8nButton.disabled = false;
   }
@@ -165,27 +179,28 @@ testGitHubButton.addEventListener('click', async () => {
   const repo = githubRepoInput.value.trim();
 
   if (!token || !repo) {
-    showStatus('Please fill in GitHub token and repository', 'error');
+    showStatusInElement(githubTestStatus, 'Please fill in GitHub token and repository', 'error');
     return;
   }
 
   if (!validateRepoFormat(repo)) {
-    showStatus('Invalid repository format. Use: owner/repo', 'error');
+    showStatusInElement(githubTestStatus, 'Invalid repository format. Use: owner/repo', 'error');
     return;
   }
 
   try {
     testGitHubButton.disabled = true;
-    showStatus('Testing GitHub connection...', 'info');
+    showStatusInElement(githubTestStatus, 'Testing GitHub connection...', 'info');
 
     const repoData = await testGitHubConnection(token, repo);
 
-    showStatus(
+    showStatusInElement(
+      githubTestStatus,
       `✓ GitHub connection successful! Repository: ${repoData.full_name} (${repoData.private ? 'Private' : 'Public'})`,
       'success'
     );
   } catch (error) {
-    showStatus(`✗ ${error.message}`, 'error');
+    showStatusInElement(githubTestStatus, `✗ ${error.message}`, 'error');
   } finally {
     testGitHubButton.disabled = false;
   }
